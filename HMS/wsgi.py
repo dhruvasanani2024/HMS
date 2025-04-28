@@ -14,3 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HMS.settings')
 
 # Vercel expects the application callable to be named 'application'
 application = get_wsgi_application()
+
+
+# Vercel expects either 'app' or 'handler'
+handler = application  # This is important for Vercel
