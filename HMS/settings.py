@@ -90,10 +90,6 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT'),
-        'OPTIONS': {
-            'sslmode': 'require',  # enforce SSL connection
-            'sslrootcert': config('DB_SSL_CERT_PATH'),  # Path to your CA certificate file
-        }
     }
 }
 
