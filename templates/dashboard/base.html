@@ -33,10 +33,13 @@
     <style>
         /* Sidebar transition */
         #sidebar { transition: transform 0.3s ease; }
-        @media (max-width: 768px) {
+        @media (max-width: 767px) {
             #sidebar { transform: translateX(-100%); position: fixed; z-index: 40; height: 100vh; top: 0; }
             #sidebar.open { transform: translateX(0); }
             #main-content { margin-left: 0 !important; }
+        }
+        @media (min-width: 768px) {
+            #sidebar { transform: translateX(0) !important; }
         }
         /* Active nav item */
         .nav-active {
@@ -75,12 +78,8 @@
 
 <!-- Django messages as toasts -->
 {% if messages %}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    {% for message in messages %}
-    showToast("{{ message|escapejs }}", "{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}");
-    {% endfor %}
-});
+<script id="django-messages" type="application/json">
+[{% for message in messages %}{"text":"{{ message|escapejs }}","type":"{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}"}{% if not forloop.last %},{% endif %}{% endfor %}]
 </script>
 {% endif %}
 
@@ -187,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </aside>
 
 <!-- Mobile sidebar overlay -->
-<div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden" onclick="closeSidebar()"></div>
+<div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="closeSidebar()" style="display:none;"></div>
 
 <!-- ─── MAIN CONTENT ─── -->
 <div id="main-content" class="md:ml-64 pt-16 min-h-screen flex flex-col">
@@ -208,11 +207,11 @@ var toggleBtn = document.getElementById('sidebarToggle');
 
 function openSidebar() {
     sidebar.classList.add('open');
-    overlay.classList.remove('hidden');
+    if (overlay) { overlay.style.display = 'block'; }
 }
 function closeSidebar() {
     sidebar.classList.remove('open');
-    overlay.classList.add('hidden');
+    if (overlay) { overlay.style.display = 'none'; }
 }
 if (toggleBtn) {
     toggleBtn.addEventListener('click', function () {
@@ -268,6 +267,15 @@ function showToast(message, type) {
     }, 4000);
 }
 window.showToast = showToast;
+
+// ─── Read and display Django messages ───
+document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('django-messages');
+    if (el) {
+        var msgs = JSON.parse(el.textContent || '[]');
+        msgs.forEach(function (m) { showToast(m.text, m.type); });
+    }
+});
 
 // ─── Modal helpers ───
 function openModal(id) {
