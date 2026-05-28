@@ -47,8 +47,8 @@ def verify_login_otp(request):
         if otp == session_otp:
             user = User.objects.get(id=user_id)
             login(request, user)
-            del request.session['login_otp']
-            del request.session['login_user_id']
+            request.session.pop('login_otp', None)
+            request.session.pop('login_user_id', None)
             return redirect('dashboard')
         else:
             messages.error(request, 'Invalid OTP. Please try again.')
@@ -96,8 +96,8 @@ def verify_registration_otp(request):
 
             login(request, user)
             
-            del request.session['registration_otp']
-            del request.session['registration_data']
+            request.session.pop('registration_otp', None)
+            request.session.pop('registration_data', None)
             
             messages.success(request, 'Registration verified successfully! Welcome to the dashboard.')
             return redirect('dashboard')

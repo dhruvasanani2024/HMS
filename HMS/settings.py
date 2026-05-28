@@ -79,6 +79,11 @@ DATABASES = {
     }
 }
 
+# Use database-backed sessions so OTP data persists across serverless requests on Vercel
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1800  # 30 minutes
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
