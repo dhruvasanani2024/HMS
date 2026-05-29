@@ -23,6 +23,7 @@ from news.models import Notice, Events
 from contact.models import contactus
 import json
 import random
+import io
 from twilio.rest import Client
 
 
@@ -636,8 +637,12 @@ def generate_student_pdf(request):
         qr_data += f"Amount: Rs.{payment.amount}\nTransaction ID: {payment.razorpay_payment_id}\nDate: {payment.paid_at.strftime('%d %b %Y') if payment.paid_at else 'N/A'}"
 
     qr_img = qrcode.make(qr_data)
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as qr_temp:
-        qr_img.save(qr_temp.name)
+    qr_buffer = io.BytesIO()
+    qr_img.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+    # Write QR to a real temp file so fpdf can load it by path
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False, dir=tempfile.gettempdir()) as qr_temp:
+        qr_temp.write(qr_buffer.read())
         qr_path = qr_temp.name
 
     pdf = PDF()
@@ -722,23 +727,20 @@ def generate_student_pdf(request):
     if os.path.exists(qr_path):
         os.remove(qr_path)
 
-    # Save PDF to media folder
-    receipt_dir = os.path.join(settings.MEDIA_ROOT, 'receipts')
-    os.makedirs(receipt_dir, exist_ok=True)
-    filename = f"{request.user.username}_{payment_id or 'receipt'}.pdf"
-    pdf_save_path = os.path.join(receipt_dir, filename)
-    pdf.output(pdf_save_path)
+    # Generate PDF in-memory (Vercel has a read-only filesystem)
+    pdf_bytes = pdf.output(dest='S').encode('latin-1')
 
-    # Also update payment record with PDF path
+    filename = f"{request.user.username}_{payment_id or 'receipt'}.pdf"
+
+    # Update payment record with a logical path (no actual file written)
     if payment:
         payment.pdf_path = f"receipts/{filename}"
         payment.save()
 
-    response = HttpResponse(content_type='application/pdf')
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    with open(pdf_save_path, 'rb') as f:
-        response.write(f.read())
     return response
+
 
 
 # ─────────────────────────── MOCK PAYMENT SANDBOX ───────────────────────────
